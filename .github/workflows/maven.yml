@@ -6,13 +6,13 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest # the machine type
-    strategy: # we are using strategy if we need to run on parallel with different devices and version
+    runs-on: macos-latest
+    strategy:
       matrix:
-        api-level: [30] # Google API level for example [25,23,28] 
+        api-level: [30]
         target: [default]
     steps:
-    - uses: actions/checkout@v2 # checkout the code 
+    - uses: actions/checkout@v2
     - name: Set up JDK 1.8
       uses: actions/setup-java@v1
       with:
@@ -22,8 +22,8 @@ jobs:
         npm install -g appium@v1.20.2
         appium -v
         appium &>/dev/null &
-    - name: Run Appium Tests
-      uses: reactivecircus/android-emulator-runner@v1 # install and create the Emulator
+    - name: Start Emulator
+      uses: reactivecircus/android-emulator-runner@v1
       with:
         api-level: ${{ matrix.api-level }}
         target: ${{ matrix.target }}
@@ -36,7 +36,7 @@ jobs:
       run: |
         echo "Waiting for emulator to be ready..."
         boot_completed=""
-        timeout=600 # 10 minutes max wait
+        timeout=600
         elapsed=0
         while [[ "$boot_completed" != "1" && $elapsed -lt $timeout ]]; do
           sleep 5
@@ -49,5 +49,6 @@ jobs:
           exit 1
         fi
         echo "Emulator is ready!"
-    - name: Run Tests
+        adb devices
+    - name: Run Appium Tests
       run: mvn clean test
