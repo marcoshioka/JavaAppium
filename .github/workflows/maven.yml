@@ -50,11 +50,14 @@ jobs:
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;x86_64"
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --licenses
 
+      - name: List available devices
+        run: $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager list device
+
       - name: Set up Android Emulator
         run: |
           echo "Creating AVD..."
           # Create a basic AVD with the available system image
-          $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd --force -n test-emulator --abi google_apis/x86_64 --package "system-images;android-30;google_apis;x86_64" --device "Pixel_3" || echo "Failed to create AVD with Pixel_3, please check available devices"
+          $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd --force -n test-emulator --abi google_apis/x86_64 --package "system-images;android-30;google_apis;x86_64" --device "Nexus_5X" || echo "Failed to create AVD with Nexus_5X, please check available devices"
 
       - name: Start Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
@@ -62,7 +65,7 @@ jobs:
           api-level: 30
           target: google_apis
           arch: x86_64
-          profile: Pixel_3  # Updated to Pixel_3
+          profile: Nexus_5X  # Updated to Nexus_5X
           avd-name: test-emulator
           disable-animations: true
           headless: true  # Run emulator in headless mode to avoid UI issues
