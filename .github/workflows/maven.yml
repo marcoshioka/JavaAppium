@@ -1,4 +1,4 @@
-name: Appium Test
+name: Java Appium Maven CI
 
 on:
   push:
@@ -36,7 +36,7 @@ jobs:
       run: |
         echo "Waiting for emulator to be ready..."
         boot_completed=""
-        timeout=300 # 5 minutes max wait
+        timeout=600 # 10 minutes max wait
         elapsed=0
         while [[ "$boot_completed" != "1" && $elapsed -lt $timeout ]]; do
           sleep 5
@@ -48,5 +48,6 @@ jobs:
           echo "Emulator failed to boot in time"
           exit 1
         fi
+        echo "Emulator is ready!"
     - name: Run Tests
       run: mvn clean test
