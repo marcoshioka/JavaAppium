@@ -113,7 +113,7 @@ jobs:
       name: Capture logcat
 
     - name: Run Maven tests
-      run: mvn test -Dtest=YourTestClassName
+      run: mvn test -Dtest=LoginTest
       env:
         APPIUM_HOST: ${{ env.APPIUM_TEST_SERVER_HOST }}
         APPIUM_PORT: ${{ env.APPIUM_TEST_SERVER_PORT }}
