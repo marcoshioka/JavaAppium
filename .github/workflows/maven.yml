@@ -1,4 +1,4 @@
-name: Appium Tests
+name: Appium Java Maven Tests with Emulator
 
 on:
   push:
@@ -12,85 +12,65 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    env:
-      ANDROID_SDK_ROOT: $HOME/Android/Sdk
-      ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 60
-      EMULATOR_TIMEOUT: 600  # 10 minutes timeout for emulator startup
-      JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.14-7/x64
-      JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.14-7/x64
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
 
-      - name: Install Appium
-        run: npm install -g appium
+    - name: Install Appium
+      run: npm install -g appium
 
-      - name: Start Appium Server
-        run: appium --log appium.log &
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v2
 
-      - name: Install Android SDK Command-line Tools
-        run: |
-          mkdir -p $HOME/Android/Sdk/cmdline-tools
-          cd $HOME/Android/Sdk
-          wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip -O commandlinetools.zip
-          unzip commandlinetools.zip -d cmdline-tools
-          rm commandlinetools.zip
-          mv cmdline-tools/cmdline-tools $HOME/Android/Sdk/cmdline-tools/latest
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --update
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;x86_64" || echo "Warning: Failed to install system-images;android-30;google_apis;x86_64"
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "platform-tools"
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "build-tools;30.0.3"
-          
-          # Set environment variables
-          echo "export ANDROID_SDK_ROOT=$HOME/Android/Sdk" >> $GITHUB_ENV
-          echo "export PATH=$ANDROID_SDK_ROOT/platform-tools:$PATH" >> $GITHUB_ENV
+    - name: Accept Android licenses
+      run: yes | sdkmanager --licenses
 
-      - name: List available system images
-        run: $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --list
+    - name: Install Android Emulator
+      run: |
+        sdkmanager "system-images;android-30;google_apis;x86_64"
+        sdkmanager "emulator"
+        sdkmanager "platform-tools"
 
-      - name: Create and Start Android Emulator (AVD)
-        run: |
-          echo "Creating and starting the Android Emulator..."
-          export ANDROID_SDK_ROOT=$HOME/Android/Sdk
-          export PATH=$ANDROID_SDK_ROOT/platform-tools:$PATH
+    - name: Create Android Emulator
+      run: |
+        echo "no" | avdmanager create avd -n test_emulator -k "system-images;android-30;google_apis;x86_64" --force
 
-          # Create AVD if it doesn't exist
-          if ! $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager list avd | grep -q "test-emulator"; then
-            $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd --force -n test-emulator --abi google_apis/x86_64 --package "system-images;android-30;google_apis;x86_64" --device "Nexus 4"
-          fi
+    - name: Start Android Emulator
+      run: |
+        emulator -avd test_emulator -no-audio -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect &
+        adb wait-for-device
+      shell: bash
+      background: true
 
-          # Start Emulator
-          nohup $HOME/Android/Sdk/emulator/emulator -avd test-emulator -noaudio -no-window -gpu swiftshader_indirect -port 5554 &
-          echo "Waiting for emulator to boot up..."
-          adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
-          echo "Emulator is ready!"
+    - name: Start Appium server
+      run: appium &
+      background: true
 
-      - name: Install Maven dependencies
-        run: mvn clean install
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-m2-
 
-      - name: Run Appium tests
-        run: mvn test
+    - name: Run Maven tests
+      run: mvn test
 
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results
-          path: target/surefire-reports/
-
-      - name: Clean up Android Emulator
-        run: |
-          echo "Shutting down emulator..."
-          adb -s emulator-5554 emu kill || adb -s emulator-5554 shell reboot -p || echo "Emulator shutdown failed"
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: target/surefire-reports
