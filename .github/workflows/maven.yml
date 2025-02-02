@@ -37,13 +37,25 @@ jobs:
       - name: Start Appium Server
         run: appium --log appium.log &
 
+      - name: Install Android SDK dependencies
+        run: |
+          sdkmanager --update
+          sdkmanager "system-images;android-30;google_apis;x86_64"
+          sdkmanager --licenses
+
       - name: Set up Android Emulator
+        run: |
+          echo "Creating AVD..."
+          # Create a basic AVD with the available system image
+          avdmanager create avd --force -n test-emulator --abi google_apis/x86_64 --package "system-images;android-30;google_apis;x86_64" --device "pixel" || echo "Failed to create AVD with Nexus_6, falling back to Pixel"
+        
+      - name: Start Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 30
           target: google_apis
           arch: x86_64
-          profile: Nexus_6  # Fallback to Nexus_6 profile
+          profile: Pixel
           avd-name: test-emulator
           disable-animations: true
           headless: true  # Run emulator in headless mode to avoid UI issues
