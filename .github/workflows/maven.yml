@@ -64,15 +64,15 @@ jobs:
           echo "Creating AVD..."
           $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd --force -n test-emulator --abi google_apis/x86_64 --package "system-images;android-30;google_apis;x86_64" --device "Nexus 5X"
 
-      - name: Start Android Emulator
+      - name: Install Android Emulator System Image
         run: |
           echo "Starting Android Emulator..."
+          # Download and unzip platform-tools
+          wget https://dl.google.com/android/repository/platform-tools-latest-linux.zip -O platform-tools.zip
+          unzip -o platform-tools.zip -d $HOME/Android/Sdk
+          rm platform-tools.zip
           nohup $HOME/Android/Sdk/emulator/emulator -avd test-emulator -noaudio -no-window -gpu swiftshader_indirect -port 5554 &
           echo "Waiting for emulator to boot up..."
-          # Explicitly install adb to ensure it is available
-          wget https://dl.google.com/android/repository/platform-tools-latest-linux.zip -O platform-tools.zip
-          unzip platform-tools.zip -d $HOME/Android/Sdk
-          rm platform-tools.zip
           $HOME/Android/Sdk/platform-tools/adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
           echo "Emulator is ready!"
 
