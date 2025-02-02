@@ -3,7 +3,7 @@ name: Java Appium Test
 on:
   pull_request:
     branches:
-      - master
+      - main
     paths-ignore:
       - 'docs/**'
       - '*.md'
@@ -120,14 +120,14 @@ jobs:
 
     - name: Save logcat output
       if: ${{ always() }}
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@main
       with:
         name: logcat-api${{ matrix.apiLevel }}
         path: logcat.log
 
     - name: Save server output
       if: ${{ always() }}
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@main
       with:
         name: appium-api${{ matrix.apiLevel }}
         path: appium.log
