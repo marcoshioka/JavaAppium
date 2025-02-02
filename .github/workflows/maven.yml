@@ -49,12 +49,16 @@ jobs:
           rm commandlinetools.zip
           mv cmdline-tools/cmdline-tools $HOME/Android/Sdk/cmdline-tools/latest
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --update
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;armeabi-v7a"
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --install "platform-tools"
+          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;armeabi-v7a" || echo "Warning: Failed to install system-images;android-30;google_apis;armeabi-v7a"
+          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "platform-tools"
+          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "build-tools;30.0.3"
           
           # Set environment variables
           echo "export ANDROID_SDK_ROOT=$HOME/Android/Sdk" >> $GITHUB_ENV
           echo "export PATH=$ANDROID_SDK_ROOT/platform-tools:$PATH" >> $GITHUB_ENV
+
+      - name: List available system images
+        run: $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --list
 
       - name: Create and Start Android Emulator (AVD)
         run: |
