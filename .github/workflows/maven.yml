@@ -51,7 +51,7 @@ jobs:
           mv $HOME/Android/Sdk/cmdline-tools/cmdline-tools $HOME/Android/Sdk/cmdline-tools/latest
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --update
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;x86_64"
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --install "platform-tools"
+          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --install "platform-tools" "platforms;android-30"
 
       - name: Install Android Emulator System Image
         run: yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;x86_64"
@@ -69,7 +69,11 @@ jobs:
           echo "Starting Android Emulator..."
           nohup $HOME/Android/Sdk/emulator/emulator -avd test-emulator -noaudio -no-window -gpu swiftshader_indirect -port 5554 &
           echo "Waiting for emulator to boot up..."
-          adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
+          # Explicitly install adb to ensure it is available
+          wget https://dl.google.com/android/repository/platform-tools-latest-linux.zip -O platform-tools.zip
+          unzip platform-tools.zip -d $HOME/Android/Sdk
+          rm platform-tools.zip
+          $HOME/Android/Sdk/platform-tools/adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
           echo "Emulator is ready!"
 
       - name: Install Maven dependencies
