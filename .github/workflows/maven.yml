@@ -49,7 +49,7 @@ jobs:
           rm commandlinetools.zip
           mv cmdline-tools/cmdline-tools $HOME/Android/Sdk/cmdline-tools/latest
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --update
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;armeabi-v7a" || echo "Warning: Failed to install system-images;android-30;google_apis;armeabi-v7a"
+          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;x86_64" || echo "Warning: Failed to install system-images;android-30;google_apis;x86_64"
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "platform-tools"
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "build-tools;30.0.3"
           
@@ -68,7 +68,7 @@ jobs:
 
           # Create AVD if it doesn't exist
           if ! $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager list avd | grep -q "test-emulator"; then
-            $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd --force -n test-emulator --abi google_apis/armeabi-v7a --package "system-images;android-30;google_apis;armeabi-v7a" --device "Nexus 4"
+            $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd --force -n test-emulator --abi google_apis/x86_64 --package "system-images;android-30;google_apis;x86_64" --device "Nexus 4"
           fi
 
           # Start Emulator
