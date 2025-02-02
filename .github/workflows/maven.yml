@@ -48,14 +48,14 @@ jobs:
 
     - name: Start Android Emulator
       run: |
-        emulator -avd test_emulator -no-audio -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect &
+        nohup emulator -avd test_emulator -no-audio -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect > /dev/null 2>&1 &
         adb wait-for-device
       shell: bash
-      background: true
 
     - name: Start Appium server
-      run: appium &
-      background: true
+      run: |
+        nohup appium > /dev/null 2>&1 &
+      shell: bash
 
     - name: Cache Maven packages
       uses: actions/cache@v3
