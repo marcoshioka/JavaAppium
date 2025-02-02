@@ -13,8 +13,10 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 60  # Increased wait time for emulator shutdown
-      EMULATOR_TIMEOUT: 600  # Increased timeout for emulator setup and boot time (10 mins)
+      ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 60
+      EMULATOR_TIMEOUT: 600  # 10 minutes timeout for emulator startup
+      JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.14-7/x64
+      JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.14-7/x64
 
     steps:
       - name: Checkout repository
@@ -37,9 +39,9 @@ jobs:
       - name: Start Appium Server
         run: appium --log appium.log &
 
-      - name: Install Android SDK and Command-line Tools
+      - name: Install Android SDK Command-line Tools
         run: |
-          # Install Android SDK command-line tools
+          # Install the SDK tools
           mkdir -p $HOME/Android/Sdk/cmdline-tools
           cd $HOME/Android/Sdk
           wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip -O commandlinetools.zip
@@ -50,36 +52,24 @@ jobs:
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;x86_64"
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --licenses
 
-      - name: List available devices
+      - name: Install Android Emulator System Image
+        run: yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;x86_64"
+
+      - name: List available AVD devices
         run: $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager list device
 
-      - name: Set up Android Emulator
+      - name: Create Android Emulator (AVD)
         run: |
           echo "Creating AVD..."
-          # Create a basic AVD with the available system image
-          $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd --force -n test-emulator --abi google_apis/x86_64 --package "system-images;android-30;google_apis;x86_64" --device "Nexus_5X" || echo "Failed to create AVD with Nexus_5X, please check available devices"
+          $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd --force -n test-emulator --abi google_apis/x86_64 --package "system-images;android-30;google_apis;x86_64" --device "Nexus_5X"
 
       - name: Start Android Emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          target: google_apis
-          arch: x86_64
-          profile: Nexus 5X  # Updated to Nexus_5X
-          avd-name: test-emulator
-          disable-animations: true
-          headless: true  # Run emulator in headless mode to avoid UI issues
-          script: |
-            echo "Starting emulator..."
-            echo "Waiting for the emulator to boot..."
-            adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
-            echo "Emulator is ready."
-
-      - name: Wait for emulator to start
-        run: adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
-
-      - name: Verify emulator is running
-        run: adb devices
+        run: |
+          echo "Starting Android Emulator..."
+          nohup $HOME/Android/Sdk/emulator/emulator -avd test-emulator -noaudio -no-window -gpu swiftshader_indirect -port 5554 &
+          echo "Waiting for emulator to boot up..."
+          adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
+          echo "Emulator is ready!"
 
       - name: Install Maven dependencies
         run: mvn clean install
