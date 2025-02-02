@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      ANDROID_SDK_ROOT: $HOME/Android/Sdk
       ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 60
       EMULATOR_TIMEOUT: 600  # 10 minutes timeout for emulator startup
       JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.14-7/x64
@@ -50,7 +51,7 @@ jobs:
           mv $HOME/Android/Sdk/cmdline-tools/cmdline-tools $HOME/Android/Sdk/cmdline-tools/latest
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --update
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;x86_64"
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --install "platform-tools"
 
       - name: Install Android Emulator System Image
         run: yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;x86_64"
@@ -61,7 +62,7 @@ jobs:
       - name: Create Android Emulator (AVD)
         run: |
           echo "Creating AVD..."
-          $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd --force -n test-emulator --abi google_apis/x86_64 --package "system-images;android-30;google_apis;x86_64" --device "Nexus 9"
+          $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd --force -n test-emulator --abi google_apis/x86_64 --package "system-images;android-30;google_apis;x86_64" --device "Nexus 5X"
 
       - name: Start Android Emulator
         run: |
