@@ -13,7 +13,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 40 # Increased wait time for emulator shutdown
+      ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 60  # Increased wait time for emulator shutdown
+      EMULATOR_TIMEOUT: 600  # Increased timeout for emulator setup and boot time (10 mins)
 
     steps:
       - name: Checkout repository
@@ -45,7 +46,12 @@ jobs:
           profile: Nexus 6
           avd-name: test-emulator
           disable-animations: true
-          script: echo "Emulator started"
+          headless: true  # Run emulator in headless mode to avoid UI issues
+          script: |
+            echo "Starting emulator..."
+            echo "Waiting for the emulator to boot..."
+            adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
+            echo "Emulator is ready."
 
       - name: Wait for emulator to start
         run: adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
@@ -69,4 +75,5 @@ jobs:
       - name: Clean up Android Emulator
         run: |
           echo "Shutting down emulator..."
-          adb -s emulator-5554 emu kill || echo "Emulator shutdown failed, force killing it."
+          adb -s emulator-5554 emu kill || echo "Graceful shutdown failed"
+          adb -s emulator-5554 emu kill || adb -s emulator-5554 shell reboot -p || adb -s emulator-5554 emu kill
