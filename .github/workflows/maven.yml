@@ -38,25 +38,25 @@ jobs:
 
     - name: Install Android Emulator
       run: |
-        sdkmanager "system-images;android-30;google_apis;x86_64"
+        sdkmanager "system-images;android-29;google_apis;x86"
         sdkmanager "emulator"
         sdkmanager "platform-tools"
 
     - name: Create Android Emulator
       run: |
-        echo "no" | avdmanager create avd -n test_emulator -k "system-images;android-30;google_apis;x86_64" --force
+        echo "no" | avdmanager create avd -n test_emulator -k "system-images;android-29;google_apis;x86" --force --device "pixel" --abi "x86" --sdcard 512M
 
     - name: Start Android Emulator
       run: |
         echo "Starting emulator..."
-        nohup emulator -avd test_emulator -no-audio -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect -accel on > /dev/null 2>&1 &
+        nohup emulator -avd test_emulator -no-audio -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect -accel on &
         echo "Waiting for emulator to boot..."
         
         # Wait for the emulator to be detected by ADB
         adb wait-for-device
         
         # Wait for the emulator to fully boot
-        timeout=300  # 5 minutes timeout
+        timeout=600  # 10 minutes timeout
         start_time=$(date +%s)
         while true; do
           boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
@@ -67,7 +67,7 @@ jobs:
           
           current_time=$(date +%s)
           if (( current_time - start_time > timeout )); then
-            echo "Timeout: Emulator failed to boot within 5 minutes."
+            echo "Timeout: Emulator failed to boot within 10 minutes."
             exit 1
           fi
           
