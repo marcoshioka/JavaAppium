@@ -1,6 +1,6 @@
 name: Java Appium Maven CI
 
-oon:
+on:
   push:
     branches: [ "main" ]
 
