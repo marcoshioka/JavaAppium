@@ -42,43 +42,34 @@ jobs:
 
       - name: Install Android SDK Command-line Tools
         run: |
-          # Install the SDK tools
           mkdir -p $HOME/Android/Sdk/cmdline-tools
           cd $HOME/Android/Sdk
           wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip -O commandlinetools.zip
           unzip commandlinetools.zip -d cmdline-tools
           rm commandlinetools.zip
-          mv $HOME/Android/Sdk/cmdline-tools/cmdline-tools $HOME/Android/Sdk/cmdline-tools/latest
+          mv cmdline-tools/cmdline-tools $HOME/Android/Sdk/cmdline-tools/latest
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --update
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;armeabi-v7a"
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --install "platform-tools"
           
-          # Ensure ANDROID_SDK_ROOT and PATH are set properly
+          # Set environment variables
           echo "export ANDROID_SDK_ROOT=$HOME/Android/Sdk" >> $GITHUB_ENV
           echo "export PATH=$ANDROID_SDK_ROOT/platform-tools:$PATH" >> $GITHUB_ENV
 
-      - name: Install Android Emulator System Image
+      - name: Create and Start Android Emulator (AVD)
         run: |
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;armeabi-v7a"
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "platforms;android-30"
-
-      - name: List available AVD devices
-        run: $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager list device
-
-      - name: Create Android Emulator (AVD)
-        run: |
-          echo "Creating AVD..."
+          echo "Creating and starting the Android Emulator..."
           export ANDROID_SDK_ROOT=$HOME/Android/Sdk
           export PATH=$ANDROID_SDK_ROOT/platform-tools:$PATH
-          $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd --force -n test-emulator --abi google_apis/armeabi-v7a --package "system-images;android-30;google_apis;armeabi-v7a" --device "Nexus 4"
 
-      - name: Start Android Emulator
-        run: |
-          echo "Starting Android Emulator..."
+          # Create AVD if it doesn't exist
+          if ! $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager list avd | grep -q "test-emulator"; then
+            $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd --force -n test-emulator --abi google_apis/armeabi-v7a --package "system-images;android-30;google_apis;armeabi-v7a" --device "Nexus 4"
+          fi
+
+          # Start Emulator
           nohup $HOME/Android/Sdk/emulator/emulator -avd test-emulator -noaudio -no-window -gpu swiftshader_indirect -port 5554 &
           echo "Waiting for emulator to boot up..."
-          export ANDROID_SDK_ROOT=$HOME/Android/Sdk
-          export PATH=$ANDROID_SDK_ROOT/platform-tools:$PATH
           adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
           echo "Emulator is ready!"
 
@@ -98,5 +89,4 @@ jobs:
       - name: Clean up Android Emulator
         run: |
           echo "Shutting down emulator..."
-          adb -s emulator-5554 emu kill || echo "Graceful shutdown failed"
-          adb -s emulator-5554 emu kill || adb -s emulator-5554 shell reboot -p || adb -s emulator-5554 emu kill
+          adb -s emulator-5554 emu kill || adb -s emulator-5554 shell reboot -p || echo "Emulator shutdown failed"
