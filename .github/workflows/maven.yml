@@ -1,4 +1,4 @@
-name: Appium Tests
+name: Appium Test
 
 on:
   push:
@@ -31,10 +31,22 @@ jobs:
         profile: Nexus 6
         headless: true
         disable-animations: true
-        script: adb shell input keyevent 82
-      timeout-minutes: 15
+        script: echo "Emulator started successfully"
     - name: Wait for Emulator to be Ready
       run: |
-        adb wait-for-device shell getprop sys.boot_completed | grep -m 1 '1'
+        echo "Waiting for emulator to be ready..."
+        boot_completed=""
+        timeout=300 # 5 minutes max wait
+        elapsed=0
+        while [[ "$boot_completed" != "1" && $elapsed -lt $timeout ]]; do
+          sleep 5
+          boot_completed=$(adb -e shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+          echo "Boot status: $boot_completed"
+          elapsed=$((elapsed + 5))
+        done
+        if [[ "$boot_completed" != "1" ]]; then
+          echo "Emulator failed to boot in time"
+          exit 1
+        fi
     - name: Run Tests
       run: mvn clean test
