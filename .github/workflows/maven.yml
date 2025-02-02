@@ -48,15 +48,32 @@ jobs:
 
     - name: Start Android Emulator
       run: |
-        nohup emulator -avd test_emulator -no-audio -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect > /dev/null 2>&1 &
+        echo "Starting emulator..."
+        nohup emulator -avd test_emulator -no-audio -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect -accel on > /dev/null 2>&1 &
         echo "Waiting for emulator to boot..."
+        
+        # Wait for the emulator to be detected by ADB
         adb wait-for-device
+        
         # Wait for the emulator to fully boot
-        while [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" != "1" ]; do
+        timeout=300  # 5 minutes timeout
+        start_time=$(date +%s)
+        while true; do
+          boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+          if [ "$boot_completed" == "1" ]; then
+            echo "Emulator is ready!"
+            break
+          fi
+          
+          current_time=$(date +%s)
+          if (( current_time - start_time > timeout )); then
+            echo "Timeout: Emulator failed to boot within 5 minutes."
+            exit 1
+          fi
+          
           echo "Emulator is still booting..."
           sleep 10
         done
-        echo "Emulator is ready!"
       shell: bash
 
     - name: Start Appium server
