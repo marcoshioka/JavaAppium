@@ -39,15 +39,27 @@ jobs:
           appium -v
           appium driver install uiautomator2
           
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Create AVD
+        run: |
+          echo "no" | avdmanager create avd -n test -k "system-images;android-29;default;x86" --force
+          $ANDROID_HOME/emulator/emulator -list-avds
+          
+      - name: Start Emulator
+        run: |
+          $ANDROID_HOME/emulator/emulator -avd test -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect &
+          adb wait-for-device
+          adb shell input keyevent 82
+        timeout-minutes: 10
+
       - name: Start Appium server
         run: |
           appium &>/dev/null &
     
       - name: Execute Android test suite
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 29
-          script: mvn clean test -Pandroid,qa
+        run: mvn clean test 
       
       - name: Archive test reports
         if: always()
