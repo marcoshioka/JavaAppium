@@ -1,100 +1,31 @@
-name: Appium Java Maven Tests with Emulator
-
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-
+  build:
+    runs-on: macos-latest # the machine type
+    strategy: # we are using strategy if we need to run on parallel with different devices and version
+      matrix:
+        api-level: [30] #Google api level for example [25,23,28] 
+        target: [default]
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up JDK 17
-      uses: actions/setup-java@v3
+    - uses: actions/checkout@v2 #checkout the code 
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
       with:
-        java-version: '17'
-        distribution: 'temurin'
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
+        java-version: 1.8
+    - name: Install and Run Appium Server
+      run: |
+         npm install -g appium@v1.20.2
+            appium -v
+            appium &>/dev/null &
+    - name: Run Appium Tests
+      uses: reactivecircus/android-emulator-runner@v1 # install and create the Emulator
       with:
-        node-version: '16'
-
-    - name: Install Appium
-      run: npm install -g appium
-
-    - name: Set up Android SDK
-      uses: android-actions/setup-android@v2
-
-    - name: Accept Android licenses
-      run: yes | sdkmanager --licenses
-
-    - name: Install Android Emulator
-      run: |
-        sdkmanager "system-images;android-29;google_apis;x86"
-        sdkmanager "emulator"
-        sdkmanager "platform-tools"
-
-    - name: Create Android Emulator
-      run: |
-        echo "no" | avdmanager create avd -n test_emulator -k "system-images;android-29;google_apis;x86" --force --device "pixel" --abi "x86" --sdcard 512M
-
-    - name: Start Android Emulator
-      run: |
-        echo "Starting emulator..."
-        $ANDROID_SDK_ROOT/emulator/emulator -avd test_emulator -no-audio -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect -accel on &
-        echo "Waiting for emulator to boot..."
-        
-        # Wait for the emulator to be detected by ADB
-        adb wait-for-device
-        
-        # Wait for the emulator to fully boot
-        timeout=600  # 10 minutes timeout
-        start_time=$(date +%s)
-        while true; do
-          boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
-          if [ "$boot_completed" == "1" ]; then
-            echo "Emulator is ready!"
-            break
-          fi
-          
-          current_time=$(date +%s)
-          if (( current_time - start_time > timeout )); then
-            echo "Timeout: Emulator failed to boot within 10 minutes."
-            exit 1
-          fi
-          
-          echo "Emulator is still booting..."
-          sleep 10
-        done
-      shell: bash
-
-    - name: Start Appium server
-      run: |
-        nohup appium > /dev/null 2>&1 &
-      shell: bash
-
-    - name: Cache Maven packages
-      uses: actions/cache@v3
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-m2-
-
-    - name: Run Maven tests
-      run: mvn test
-
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: target/surefire-reports
+        api-level: ${{ matrix.api-level }}
+        target: ${{ matrix.target }}
+        arch: x86_64
+        profile: Nexus 6
+   # script: ./mvn test --info 
+        script: mvn clean test
