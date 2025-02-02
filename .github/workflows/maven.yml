@@ -50,7 +50,7 @@ jobs:
           rm commandlinetools.zip
           mv $HOME/Android/Sdk/cmdline-tools/cmdline-tools $HOME/Android/Sdk/cmdline-tools/latest
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --update
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;x86_64"
+          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;armeabi-v7a"
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --install "platform-tools"
           
           # Ensure ANDROID_SDK_ROOT and PATH are set properly
@@ -59,7 +59,7 @@ jobs:
 
       - name: Install Android Emulator System Image
         run: |
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;x86_64"
+          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "system-images;android-30;google_apis;armeabi-v7a"
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "platforms;android-30"
 
       - name: List available AVD devices
@@ -70,7 +70,7 @@ jobs:
           echo "Creating AVD..."
           export ANDROID_SDK_ROOT=$HOME/Android/Sdk
           export PATH=$ANDROID_SDK_ROOT/platform-tools:$PATH
-          $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd --force -n test-emulator --abi google_apis/x86_64 --package "system-images;android-30;google_apis;x86_64" --device "Nexus 4"
+          $HOME/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd --force -n test-emulator --abi google_apis/armeabi-v7a --package "system-images;android-30;google_apis;armeabi-v7a" --device "Nexus 4"
 
       - name: Start Android Emulator
         run: |
