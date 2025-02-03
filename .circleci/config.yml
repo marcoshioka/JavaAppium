@@ -1,84 +1,51 @@
 version: 2.1
 
 executors:
-  android-executor:
+  java-executor:
     docker:
-      - image: cimg/android:2024.01-browsers  # Updated to include more tools
-    environment:
-      ANDROID_HOME: /home/circleci/android-sdk
-      ANDROID_SDK_ROOT: /home/circleci/android-sdk
-      PATH: /home/circleci/android-sdk/cmdline-tools/latest/bin:/home/circleci/android-sdk/platform-tools:${PATH}
+      - image: circleci/openjdk:11-jdk
+    working_directory: ~/repo
 
 jobs:
-  setup-environment:
-    executor: android-executor
+  setup:
+    docker:
+      - image: circleci/openjdk:11-jdk
     steps:
       - checkout
       - run:
-          name: Debug environment
+          name: Install Maven
           command: |
-            which sdkmanager
-            echo $ANDROID_HOME
-            echo $PATH
+            curl -sL https://dlcdn.apache.org/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.tar.gz | tar -xz -C /opt
+            echo "export PATH=/opt/apache-maven-3.8.4/bin:$PATH" >> ~/.bashrc
+            source ~/.bashrc
       - run:
-          name: Accept Licenses
+          name: Install Appium and Android SDK
           command: |
-            echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-      - run:
-          name: Install Android SDK components
-          command: |
-            $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
-              "platform-tools" \
-              "platforms;android-33" \
-              "build-tools;33.0.2" \
-              "system-images;android-33;google_apis;x86_64" \
-              "emulator"
-      - run:
-          name: Create AVD
-          command: |
-            $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager create avd \
-              -n testAVD \
-              -k "system-images;android-33;google_apis;x86_64" \
-              --device "pixel" \
-              --force
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - .android
-            - android-sdk
+            npm install -g appium
+            wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip
+            unzip commandlinetools-linux-7583922_latest.zip -d /opt/android-sdk
+            yes | /opt/android-sdk/cmdline-tools/bin/sdkmanager --licenses
+            /opt/android-sdk/cmdline-tools/bin/sdkmanager "platform-tools" "build-tools;30.0.3" "platforms;android-30"
 
   run-tests:
-    executor: android-executor
+    docker:
+      - image: circleci/openjdk:11-jdk
     steps:
       - checkout
-      - attach_workspace:
-          at: ~/
       - run:
-          name: Install Node.js and npm
+          name: Install dependencies and run Appium tests with Maven
           command: |
-            curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-      - run:
-          name: Start AVD and Appium
-          command: |
-            nohup $ANDROID_HOME/emulator/emulator -avd testAVD -no-audio -no-window &
-            $ANDROID_HOME/platform-tools/adb wait-for-device
-            $ANDROID_HOME/platform-tools/adb shell input keyevent 82
-            npm install -g appium
-            appium --log-level error &
-      - run:
-          name: Run Appium Tests
-          command: mvn clean test
-      - store_test_results:
-          path: target/surefire-reports
-      - store_artifacts:
-          path: target/surefire-reports
+            curl -sL https://dlcdn.apache.org/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.tar.gz | tar -xz -C /opt
+            echo "export PATH=/opt/apache-maven-3.8.4/bin:$PATH" >> ~/.bashrc
+            source ~/.bashrc
+            mvn clean install
+            mvn test
 
 workflows:
   version: 2
-  appium-tests:
+  test:
     jobs:
-      - setup-environment
+      - setup
       - run-tests:
           requires:
-            - setup-environment
+            - setup
