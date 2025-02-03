@@ -1,63 +1,33 @@
 version: 2.1
 
-executors:
-  android-executor:
-    docker:
-      - image: circleci/python:3.9  # Or choose another base image suitable for Android
-    working_directory: ~/repo
-
 jobs:
-  setup:
+  build:
     docker:
-      - image: circleci/python:3.9  # Same image for consistency
+      - image: circleci/python:3.8  # You can choose an image suitable for your setup
     steps:
       - checkout
-      - run:
-          name: Install Java 11
-          command: |
-            sudo apt update
-            sudo apt install openjdk-11-jdk
-      - run:
-          name: Install Android SDK
-          command: |
-            sudo apt update
-            sudo apt install -y wget unzip
-            wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip -O android-tools.zip
-            unzip android-tools.zip -d android-sdk
-            sudo mv android-sdk /usr/local/
-            export ANDROID_HOME=/usr/local/android-sdk
-            export PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools
-            echo "export ANDROID_HOME=/usr/local/android-sdk" >> ~/.bashrc
-            echo "export PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools" >> ~/.bashrc
-            source ~/.bashrc
       - run:
           name: Install dependencies
           command: |
-            sudo apt install -y maven
-            curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-            sudo apt-add-repository "deb https://dl.yarnpkg.com/debian/ stable main"
-            sudo apt update && sudo apt install -y yarn
-            yarn global add appium
+            sudo apt-get update
+            sudo apt-get install -y software-properties-common
+            sudo apt-add-repository ppa:openjdk-r/ppa
+            sudo apt-get update
+            sudo apt-get install -y openjdk-11-jdk maven
+            sudo apt-get install -y android-sdk
 
-  test:
-    docker:
-      - image: circleci/python:3.9
-    steps:
-      - checkout
       - run:
-          name: Run Appium tests
+          name: Install Appium
+          command: |
+            npm install -g appium
+
+      - run:
+          name: Run Appium tests with Maven
           command: |
             mvn clean install
-            appium --use-plugins element-wait --log-level error &  # Start Appium server in background
-            sleep 10  # Wait for Appium server to start
-            mvn test  # Run tests after starting Appium
-            pkill appium  # Kill Appium after tests
 
 workflows:
   version: 2
-  test:
+  build:
     jobs:
-      - setup
-      - test:
-          requires:
-            - setup
+      - build
