@@ -8,6 +8,7 @@ executors:
     environment:
       ANDROID_HOME: /opt/android-sdk
       PATH: "/home/circleci/apache-maven-3.8.4/bin:$PATH:/opt/android-sdk/cmdline-tools/bin:$PATH"
+      JAVA_HOME: "/usr/lib/jvm/java-11-openjdk-amd64"
 
 jobs:
   setup:
@@ -54,8 +55,7 @@ jobs:
             ls /opt/android-sdk
 
   run-tests:
-    docker:
-      - image: circleci/openjdk:11
+    executor: java-executor
     steps:
       - checkout
       - run:
