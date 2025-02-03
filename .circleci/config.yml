@@ -27,6 +27,15 @@ jobs:
             unzip commandlinetools-linux-7583922_latest.zip -d /opt/android-sdk
             yes | /opt/android-sdk/cmdline-tools/bin/sdkmanager --licenses
             /opt/android-sdk/cmdline-tools/bin/sdkmanager "platform-tools" "build-tools;30.0.3" "platforms;android-30"
+            # Fix potential path issues
+            echo "export PATH=/opt/android-sdk/cmdline-tools/bin:$PATH" >> ~/.bashrc
+            echo "export ANDROID_HOME=/opt/android-sdk" >> ~/.bashrc
+            source ~/.bashrc
+      - run:
+          name: Verify Android SDK installation
+          command: |
+            echo $ANDROID_HOME
+            ls /opt/android-sdk
 
   run-tests:
     docker:
@@ -51,4 +60,3 @@ workflows:
       - run-tests:
           requires:
             - setup
-
