@@ -30,11 +30,21 @@ jobs:
     - name: Start Appium Server
       run: appium --log appium.log --base-path /wd/hub &
 
-    - name: Run Appium Tests
+    - name: Start Android Emulator
       uses: reactivecircus/android-emulator-runner@v1
       with:
         api-level: ${{ matrix.api-level }}
         target: ${{ matrix.target }}
         arch: x86_64
         profile: Nexus 6
-        script: mvn clean test
+        disable-animations: true
+        emulator-options: "-no-snapshot-load -noaudio -no-boot-anim"
+        script: echo "Emulator started"
+
+    - name: Wait for Emulator to Boot
+      run: |
+        adb wait-for-device shell getprop sys.boot_completed | grep -m 1 '1'
+        adb devices
+
+    - name: Run Appium Tests
+      run: mvn clean test
