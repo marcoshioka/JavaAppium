@@ -1,99 +1,63 @@
 version: 2.1
 
 executors:
-  java-executor:
+  android-executor:
     docker:
-      - image: circleci/openjdk:11-node-browsers
+      - image: circleci/python:3.9  # Or choose another base image suitable for Android
     working_directory: ~/repo
-    environment:
-      ANDROID_HOME: /opt/android-sdk
-      JAVA_HOME: "/usr/lib/jvm/java-11-openjdk-amd64"
-      PATH: "/home/circleci/apache-maven-3.8.4/bin:/opt/android-sdk/cmdline-tools/bin:$PATH"
 
 jobs:
   setup:
-    executor: java-executor
+    docker:
+      - image: circleci/python:3.9  # Same image for consistency
     steps:
       - checkout
-
       - run:
-          name: Install curl and other dependencies
+          name: Install Java 11
           command: |
-            apt-get update
-            apt-get install -y curl unzip
-
-      - restore_cache:
-          keys:
-            - v1-maven-repo-{{ checksum "pom.xml" }}
-            - v1-maven-repo-
-
+            sudo apt update
+            sudo apt install openjdk-11-jdk
       - run:
-          name: Install Maven
+          name: Install Android SDK
           command: |
-            curl -O https://archive.apache.org/dist/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.tar.gz
-            tar -xzvf apache-maven-3.8.4-bin.tar.gz -C /home/circleci
-            echo "export PATH=/home/circleci/apache-maven-3.8.4/bin:$PATH" >> ~/.bashrc
+            sudo apt update
+            sudo apt install -y wget unzip
+            wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip -O android-tools.zip
+            unzip android-tools.zip -d android-sdk
+            sudo mv android-sdk /usr/local/
+            export ANDROID_HOME=/usr/local/android-sdk
+            export PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools
+            echo "export ANDROID_HOME=/usr/local/android-sdk" >> ~/.bashrc
+            echo "export PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools" >> ~/.bashrc
             source ~/.bashrc
-
       - run:
-          name: Install Node.js and npm
+          name: Install dependencies
           command: |
-            curl -sL https://deb.nodesource.com/setup_18.x | bash -
-            apt-get update
-            apt-get install -y nodejs npm node-gyp
-            node -v
-            npm -v
-            npm install -g npm@latest
+            sudo apt install -y maven
+            curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+            sudo apt-add-repository "deb https://dl.yarnpkg.com/debian/ stable main"
+            sudo apt update && sudo apt install -y yarn
+            yarn global add appium
 
-      - run:
-          name: Install Appium and Android SDK
-          command: |
-            npm install -g appium
-            wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip
-            unzip commandlinetools-linux-7583922_latest.zip -d /opt/android-sdk
-            yes | /opt/android-sdk/cmdline-tools/bin/sdkmanager --licenses
-            /opt/android-sdk/cmdline-tools/bin/sdkmanager "platform-tools" "build-tools;30.0.3" "platforms;android-30"
-            echo "export PATH=/opt/android-sdk/cmdline-tools/bin:$PATH" >> ~/.bashrc
-            echo "export ANDROID_HOME=/opt/android-sdk" >> ~/.bashrc
-            source ~/.bashrc
-
-      - save_cache:
-          paths:
-            - ~/.m2
-          key: v1-maven-repo-{{ checksum "pom.xml" }}
-
-      - run:
-          name: Verify Android SDK installation
-          command: |
-            echo $ANDROID_HOME
-            ls /opt/android-sdk
-
-  run-tests:
-    executor: java-executor
+  test:
+    docker:
+      - image: circleci/python:3.9
     steps:
       - checkout
-
-      - restore_cache:
-          keys:
-            - v1-maven-repo-{{ checksum "pom.xml" }}
-            - v1-maven-repo-
-
       - run:
-          name: Install dependencies and run Appium tests with Maven
+          name: Run Appium tests
           command: |
             mvn clean install
-            mvn test
-
-      - save_cache:
-          paths:
-            - ~/.m2
-          key: v1-maven-repo-{{ checksum "pom.xml" }}
+            appium --use-plugins element-wait --log-level error &  # Start Appium server in background
+            sleep 10  # Wait for Appium server to start
+            mvn test  # Run tests after starting Appium
+            pkill appium  # Kill Appium after tests
 
 workflows:
   version: 2
   test:
     jobs:
       - setup
-      - run-tests:
+      - test:
           requires:
             - setup
