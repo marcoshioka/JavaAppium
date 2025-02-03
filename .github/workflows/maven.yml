@@ -24,10 +24,14 @@ jobs:
         brew install maven
         mvn -version
 
-    - name: Install and Run Appium Server
-      run: |
-        chmod +x ./scripts/RunAppiumServer.sh
-        ./scripts/RunAppiumServer.sh
+    - name: Debug Check for RunAppiumServer.sh
+      run: ls -l scripts/
+
+    - name: Install Appium
+      run: npm install -g appium
+
+    - name: Start Appium Server
+      run: appium --log appium.log --base-path /wd/hub &
 
     - name: Run Appium Tests
       uses: reactivecircus/android-emulator-runner@v1
@@ -36,4 +40,4 @@ jobs:
         target: ${{ matrix.target }}
         arch: x86_64
         profile: Nexus 6
-        script: mvn clean test 
+        script: mvn clean test
