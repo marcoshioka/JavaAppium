@@ -53,6 +53,12 @@ jobs:
       - name: List Available System Images
         run: sdkmanager --list | grep "system-images;android-29;default;x86"
 
+      - name: Fix SDK Metadata
+        run: |
+          rm -rf $ANDROID_HOME/tools
+          sdkmanager --update
+          sdkmanager "system-images;android-29;default;x86"
+
       - name: Create AVD
         run: |
           echo "no" | avdmanager create avd -n test -k "system-images;android-29;default;x86" --force
