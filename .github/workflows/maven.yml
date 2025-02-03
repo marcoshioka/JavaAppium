@@ -50,6 +50,9 @@ jobs:
       - name: Verify Android SDK installation
         run: sdkmanager --list
 
+      - name: List Available System Images
+        run: sdkmanager --list | grep "system-images;android-29;default;x86"
+
       - name: Create AVD
         run: |
           echo "no" | avdmanager create avd -n test -k "system-images;android-29;default;x86" --force
