@@ -67,13 +67,17 @@ jobs:
           # Modify AVD configuration to reduce CPU and RAM requirements
           echo "hw.cpu.ncore=2" >> ~/.android/avd/test.avd/config.ini
           echo "hw.ramSize=1024" >> ~/.android/avd/test.avd/config.ini
+
+      - name: Verify AVD Configuration
+        run: |
+          cat ~/.android/avd/test.avd/config.ini
           
       - name: Start Emulator
         run: |
-          $ANDROID_HOME/emulator/emulator -avd test -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -accel on &
+          $ANDROID_HOME/emulator/emulator -avd test -no-window -no-audio -no-boot-anim -gpu swiftshader -accel off &
           adb wait-for-device
           adb shell input keyevent 82
-        timeout-minutes: 10
+        timeout-minutes: 20  # Increase timeout to 20 minutes
 
       - name: Check Emulator Logs
         run: |
