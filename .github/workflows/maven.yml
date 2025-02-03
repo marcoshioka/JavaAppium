@@ -47,6 +47,9 @@ jobs:
             platforms;android-29
             system-images;android-29;default;x86
 
+      - name: Verify Android SDK installation
+        run: sdkmanager --list
+
       - name: Create AVD
         run: |
           echo "no" | avdmanager create avd -n test -k "system-images;android-29;default;x86" --force
