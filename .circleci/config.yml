@@ -11,10 +11,11 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -y software-properties-common
-            sudo apt-add-repository ppa:openjdk-r/ppa
+            echo "y" | sudo apt-add-repository ppa:openjdk-r/ppa  # Automatically confirm repository addition
             sudo apt-get update
             sudo apt-get install -y openjdk-11-jdk maven
             sudo apt-get install -y android-sdk
+            sudo apt-get install -y dbus  # Install dbus to fix the connection issue
 
       - run:
           name: Install Appium
