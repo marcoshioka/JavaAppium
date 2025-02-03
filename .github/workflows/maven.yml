@@ -24,9 +24,6 @@ jobs:
         brew install maven
         mvn -version
 
-    - name: Debug Check for RunAppiumServer.sh
-      run: ls -l scripts/
-
     - name: Install Appium
       run: npm install -g appium
 
