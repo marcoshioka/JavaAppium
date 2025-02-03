@@ -41,6 +41,11 @@ jobs:
           
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          components: |
+            platform-tools
+            platforms;android-29
+            system-images;android-29;default;x86
 
       - name: Create AVD
         run: |
