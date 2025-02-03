@@ -1,41 +1,44 @@
 version: 2.1
 
 jobs:
-  build:
+  setup:
     docker:
-      - image: circleci/python:3.8  # You can choose an image suitable for your setup
+      - image: circleci/openjdk:11
     steps:
       - checkout
+
       - run:
-          name: Install dependencies
+          name: Install Maven
           command: |
-            sudo apt-get update
-            sudo apt-get install -y software-properties-common
-            echo "y" | sudo apt-add-repository ppa:openjdk-r/ppa  # Automatically confirm repository addition
-            sudo apt-get update
-            sudo apt-get install -y openjdk-11-jdk maven
-            sudo apt-get install -y android-sdk
-            sudo apt-get install -y dbus dbus-x11  # Install dbus and dbus-x11 to fix the connection issue
-            sudo apt-get install -y curl  # For downloading nodejs
+            curl -O https://archive.apache.org/dist/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.tar.gz
+            tar -xzvf apache-maven-3.8.4-bin.tar.gz -C /home/circleci
+            echo "export PATH=/home/circleci/apache-maven-3.8.4/bin:$PATH" >> ~/.bashrc
+            source ~/.bashrc
 
       - run:
           name: Install Node.js and npm
           command: |
-            curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-            sudo apt-get install -y nodejs
+            curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+            sudo apt-get update
+            sudo apt-get install -y nodejs npm node-gyp
+            node -v
+            npm -v
+            sudo npm install -g npm@latest
 
       - run:
-          name: Install Appium
+          name: Install Appium and Android SDK
           command: |
-            sudo npm install -g appium
+            npm install -g appium
+            wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip
+            unzip commandlinetools-linux-7583922_latest.zip -d /opt/android-sdk
+            yes | /opt/android-sdk/cmdline-tools/bin/sdkmanager --licenses
+            /opt/android-sdk/cmdline-tools/bin/sdkmanager "platform-tools" "build-tools;30.0.3" "platforms;android-30"
+            echo "export PATH=/opt/android-sdk/cmdline-tools/bin:$PATH" >> ~/.bashrc
+            echo "export ANDROID_HOME=/opt/android-sdk" >> ~/.bashrc
+            source ~/.bashrc
 
       - run:
-          name: Run Appium tests with Maven
+          name: Verify Android SDK installation
           command: |
-            mvn clean install
-
-workflows:
-  version: 2
-  build:
-    jobs:
-      - build
+            echo $ANDROID_HOME
+            ls /opt/android-sdk
