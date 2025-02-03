@@ -71,8 +71,35 @@ jobs:
           cores: 2
           ram-size: 4096M
           disk-size: 8192M
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
           script: |
+            # Wait for ADB to detect the emulator
+            max_retries=30
+            counter=0
+            until adb shell getprop sys.boot_completed 2>&1 | grep -q '1'; do
+              if [ $counter -eq $max_retries ]; then
+                echo "Error: Emulator didn't start within expected time"
+                exit 1
+              fi
+              counter=$((counter + 1))
+              echo "Waiting for emulator to start... ($counter/$max_retries)"
+              sleep 10
+            done
+
+            # Verify ADB connection
             adb devices
+            echo "Emulator is ready"
+            
+            # Additional device preparation
+            adb shell settings put global window_animation_scale 0.0
+            adb shell settings put global transition_animation_scale 0.0
+            adb shell settings put global animator_duration_scale 0.0
+            
+            # Wait for device to be fully ready
+            sleep 30
+            
+            # Run the actual tests
             mvn clean test -Pandroid
 
       - name: Upload Test Results
