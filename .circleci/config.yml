@@ -1,45 +1,58 @@
-# This config was automatically generated from your source code
-# Stacks detected: cicd:github-actions:.github/workflows,deps:java:AppiumTest
 version: 2.1
-jobs:
-  test-java:
+
+executors:
+  android-executor:
     docker:
-      - image: cimg/openjdk:17.0
-    working_directory: ~/project/AppiumTest
+      - image: cimg/android:2023.08
+    environment:
+      ANDROID_HOME: /opt/android
+      ANDROID_SDK_ROOT: /opt/android
+      PATH: /opt/android/cmdline-tools/latest/bin:$PATH
+
+jobs:
+  setup-environment:
+    executor: android-executor
     steps:
-      - checkout:
-          path: ~/project
+      - checkout
       - run:
-          name: Calculate cache key
-          command: |-
-            find . -name 'pom.xml' -o -name 'gradlew*' -o -name '*.gradle*' | \
-                    sort | xargs cat > /tmp/CIRCLECI_CACHE_KEY
-      - restore_cache:
-          key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
+          name: Install dependencies
+          command: |
+            sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "system-images;android-33;google_apis;x86_64"
+            sdkmanager --licenses
+            echo "y" | sdkmanager --install emulator
+            avdmanager create avd -n testAVD -k "system-images;android-33;google_apis;x86_64" --device "pixel"
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - .android
+
+  run-tests:
+    executor: android-executor
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/
       - run:
-          command: mvn verify
+          name: Start AVD and Appium
+          command: |
+            nohup emulator -avd testAVD -no-audio -no-window &
+            adb wait-for-device
+            adb shell input keyevent 82
+            npm install -g appium
+            appium --log-level error &
+      - run:
+          name: Run Appium Tests
+          command: mvn clean test
       - store_test_results:
           path: target/surefire-reports
-      - save_cache:
-          key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
-          paths:
-            - ~/.m2/repository
-  deploy:
-    # This is an example deploy job, not actually used by the workflow
-    docker:
-      - image: cimg/base:stable
-    steps:
-      # Replace this with steps to deploy to users
-      - run:
-          name: deploy
-          command: '#e.g. ./deploy.sh'
-      - run:
-          name: found github actions config
-          command: ':'
+      - store_artifacts:
+          path: target/surefire-reports
+
 workflows:
-  build-and-test:
+  version: 2
+  appium-tests:
     jobs:
-      - test-java
-    # - deploy:
-    #     requires:
-    #       - test-java
+      - setup-environment
+      - run-tests:
+          requires:
+            - setup-environment
