@@ -15,21 +15,22 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install required packages
+          name: Debug environment
           command: |
-            sudo apt-get update
-            sudo apt-get install -y bash curl wget unzip
+            echo $ANDROID_HOME
+            echo $PATH
+            ls -la /home/circleci/android-sdk || true
       - run:
           name: Setup Android SDK
           command: |
             mkdir -p ${ANDROID_HOME}/cmdline-tools
-            wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-            unzip commandlinetools-linux-9477386_latest.zip
+            curl -o cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+            unzip cmdline-tools.zip
             mv cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest
       - run:
           name: Install Android SDK components
           command: |
-            yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses
+            ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
             ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager \
               "platform-tools" \
               "platforms;android-33" \
