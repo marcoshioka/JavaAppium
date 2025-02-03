@@ -18,7 +18,7 @@ jobs:
             sudo apt-get install -y dbus dbus-x11  # Install dbus and dbus-x11 to fix the connection issue
             sudo apt-get install -y curl  # For downloading nodejs
             sudo apt-get install -y libnode-dev  # Install missing dependency for node-gyp
-
+          
       - run:
           name: Install Node.js and npm (with fixes)
           command: |
