@@ -28,7 +28,9 @@ jobs:
           command: |
             curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
             sudo apt-get update
-            sudo apt-get install -y nodejs npm
+            sudo apt-get install -y nodejs
+            sudo apt-get install -y npm
+            sudo apt-get install -y node-gyp
             node -v
             npm -v
             sudo npm install -g npm@latest
