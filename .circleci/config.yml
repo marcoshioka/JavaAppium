@@ -15,12 +15,19 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y openjdk-11-jdk maven
             sudo apt-get install -y android-sdk
-            sudo apt-get install -y dbus  # Install dbus to fix the connection issue
+            sudo apt-get install -y dbus dbus-x11  # Install dbus and dbus-x11 to fix the connection issue
+            sudo apt-get install -y curl  # For downloading nodejs
+
+      - run:
+          name: Install Node.js and npm
+          command: |
+            curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+            sudo apt-get install -y nodejs
 
       - run:
           name: Install Appium
           command: |
-            npm install -g appium
+            sudo npm install -g appium
 
       - run:
           name: Run Appium tests with Maven
