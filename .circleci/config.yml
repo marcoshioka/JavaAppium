@@ -3,11 +3,11 @@ version: 2.1
 executors:
   android-executor:
     docker:
-      - image: cimg/android:2023.08
+      - image: circleci/android:2021.10.2
     environment:
-      ANDROID_HOME: /home/circleci/android-sdk
-      ANDROID_SDK_ROOT: /home/circleci/android-sdk
-      PATH: /home/circleci/android-sdk/cmdline-tools/latest/bin:/home/circleci/android-sdk/platform-tools:${PATH}
+      ANDROID_HOME: /opt/android/sdk
+      ANDROID_SDK_ROOT: /opt/android/sdk
+      PATH: /opt/android/sdk/cmdline-tools/latest/bin:/opt/android/sdk/platform-tools:/opt/android/sdk/tools/bin:${PATH}
 
 jobs:
   setup-environment:
@@ -15,23 +15,30 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install packages
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y bash
+      - run:
           name: Debug environment
           command: |
             echo $ANDROID_HOME
             echo $PATH
-            ls -la /home/circleci/android-sdk || true
+            which sh
+            which bash
+      - run:
+          name: Accept Android SDK licenses
+          command: |
+            mkdir -p $ANDROID_HOME/licenses
+            echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_HOME/licenses/android-sdk-license
       - run:
           name: Install Android SDK components
-          shell: /bin/bash
           command: |
-            # Accept licenses using echo instead of yes
-            while true; do echo y; done | sdkmanager --licenses
-            
-            # Install required SDK components
-            echo "y" | sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "system-images;android-33;google_apis;x86_64" "emulator"
-            
-            # Create AVD
-            echo "y" | avdmanager create avd -n testAVD -k "system-images;android-33;google_apis;x86_64" --device "pixel" --force
+            sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "system-images;android-33;google_apis;x86_64" "emulator"
+      - run:
+          name: Create AVD
+          command: |
+            echo "no" | avdmanager create avd -n testAVD -k "system-images;android-33;google_apis;x86_64" --device "pixel" --force
       - persist_to_workspace:
           root: ~/
           paths:
