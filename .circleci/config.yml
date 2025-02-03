@@ -3,11 +3,11 @@ version: 2.1
 executors:
   android-executor:
     docker:
-      - image: circleci/android:2021.10.2
+      - image: cimg/android:2024.01
     environment:
-      ANDROID_HOME: /opt/android/sdk
-      ANDROID_SDK_ROOT: /opt/android/sdk
-      PATH: /opt/android/sdk/cmdline-tools/latest/bin:/opt/android/sdk/platform-tools:/opt/android/sdk/tools/bin:${PATH}
+      ANDROID_HOME: /home/circleci/android-sdk
+      ANDROID_SDK_ROOT: /home/circleci/android-sdk
+      PATH: /home/circleci/android-sdk/cmdline-tools/latest/bin:/home/circleci/android-sdk/platform-tools:${PATH}
 
 jobs:
   setup-environment:
@@ -15,30 +15,35 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install packages
+          name: Install required packages
           command: |
             sudo apt-get update
-            sudo apt-get install -y bash
+            sudo apt-get install -y bash curl wget unzip
       - run:
-          name: Debug environment
+          name: Setup Android SDK
           command: |
-            echo $ANDROID_HOME
-            echo $PATH
-            which sh
-            which bash
-      - run:
-          name: Accept Android SDK licenses
-          command: |
-            mkdir -p $ANDROID_HOME/licenses
-            echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_HOME/licenses/android-sdk-license
+            mkdir -p ${ANDROID_HOME}/cmdline-tools
+            wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+            unzip commandlinetools-linux-9477386_latest.zip
+            mv cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest
       - run:
           name: Install Android SDK components
           command: |
-            sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "system-images;android-33;google_apis;x86_64" "emulator"
+            yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses
+            ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager \
+              "platform-tools" \
+              "platforms;android-33" \
+              "build-tools;33.0.2" \
+              "system-images;android-33;google_apis;x86_64" \
+              "emulator"
       - run:
           name: Create AVD
           command: |
-            echo "no" | avdmanager create avd -n testAVD -k "system-images;android-33;google_apis;x86_64" --device "pixel" --force
+            ${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager create avd \
+              -n testAVD \
+              -k "system-images;android-33;google_apis;x86_64" \
+              --device "pixel" \
+              --force
       - persist_to_workspace:
           root: ~/
           paths:
