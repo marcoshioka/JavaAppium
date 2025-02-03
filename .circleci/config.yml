@@ -15,16 +15,23 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Android SDK components
+          name: Debug environment
           command: |
-            # Accept licenses first
-            yes | sdkmanager --licenses
+            echo $ANDROID_HOME
+            echo $PATH
+            ls -la /home/circleci/android-sdk || true
+      - run:
+          name: Install Android SDK components
+          shell: /bin/bash
+          command: |
+            # Accept licenses using echo instead of yes
+            while true; do echo y; done | sdkmanager --licenses
             
             # Install required SDK components
-            sdkmanager --install "platform-tools" "platforms;android-33" "build-tools;33.0.2" "system-images;android-33;google_apis;x86_64" "emulator"
+            echo "y" | sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "system-images;android-33;google_apis;x86_64" "emulator"
             
             # Create AVD
-            avdmanager create avd -n testAVD -k "system-images;android-33;google_apis;x86_64" --device "pixel" --force
+            echo "y" | avdmanager create avd -n testAVD -k "system-images;android-33;google_apis;x86_64" --device "pixel" --force
       - persist_to_workspace:
           root: ~/
           paths:
