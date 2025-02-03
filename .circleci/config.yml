@@ -1,62 +1,48 @@
-version: 2.1
+name: CI for Appium Tests
 
-executors:
-  java-executor:
-    docker:
-      - image: circleci/openjdk:11  # Changed the image name here
-    working_directory: ~/repo
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  setup:
-    docker:
-      - image: circleci/openjdk:11  # Also updated here
-    steps:
-      - checkout
-      - run:
-          name: Install Maven
-          command: |
-            curl -O https://archive.apache.org/dist/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.tar.gz
-            tar -xzvf apache-maven-3.8.4-bin.tar.gz -C /opt
-            echo "export PATH=/opt/apache-maven-3.8.4/bin:$PATH" >> ~/.bashrc
-            source ~/.bashrc
-      - run:
-          name: Install Appium and Android SDK
-          command: |
-            npm install -g appium
-            wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip
-            unzip commandlinetools-linux-7583922_latest.zip -d /opt/android-sdk
-            yes | /opt/android-sdk/cmdline-tools/bin/sdkmanager --licenses
-            /opt/android-sdk/cmdline-tools/bin/sdkmanager "platform-tools" "build-tools;30.0.3" "platforms;android-30"
-            # Fix potential path issues
-            echo "export PATH=/opt/android-sdk/cmdline-tools/bin:$PATH" >> ~/.bashrc
-            echo "export ANDROID_HOME=/opt/android-sdk" >> ~/.bashrc
-            source ~/.bashrc
-      - run:
-          name: Verify Android SDK installation
-          command: |
-            echo $ANDROID_HOME
-            ls /opt/android-sdk
+  build:
+    runs-on: ubuntu-latest
 
-  run-tests:
-    docker:
-      - image: circleci/openjdk:11  # Updated here too
     steps:
-      - checkout
-      - run:
-          name: Install dependencies and run Appium tests with Maven
-          command: |
-            curl -O https://archive.apache.org/dist/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.tar.gz
-            tar -xzvf apache-maven-3.8.4-bin.tar.gz -C /opt
-            echo "export PATH=/opt/apache-maven-3.8.4/bin:$PATH" >> ~/.bashrc
-            source ~/.bashrc
-            mvn clean install
-            mvn test
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-workflows:
-  version: 2
-  test:
-    jobs:
-      - setup
-      - run-tests:
-          requires:
-            - setup
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+
+      - name: Download Maven
+        run: |
+          curl -O https://archive.apache.org/dist/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.tar.gz
+
+      - name: Fix permissions for Maven archive
+        run: |
+          chmod +x apache-maven-3.8.4-bin.tar.gz
+
+      - name: Extract Maven
+        run: |
+          tar -xvzf apache-maven-3.8.4-bin.tar.gz
+
+      - name: Set up Maven
+        run: |
+          sudo mv apache-maven-3.8.4 /opt/maven
+          echo "MAVEN_HOME=/opt/maven" >> $GITHUB_ENV
+          echo "PATH=$MAVEN_HOME/bin:$PATH" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          mvn clean install
+
+      - name: Run Appium tests with Maven
+        run: |
+          mvn test
