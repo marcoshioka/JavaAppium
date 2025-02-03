@@ -27,6 +27,7 @@ jobs:
           name: Install Node.js and npm
           command: |
             curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+            sudo apt-get update
             sudo apt-get install -y nodejs npm
             node -v
             npm -v
@@ -43,6 +44,7 @@ jobs:
             echo "export PATH=/opt/android-sdk/cmdline-tools/bin:$PATH" >> ~/.bashrc
             echo "export ANDROID_HOME=/opt/android-sdk" >> ~/.bashrc
             source ~/.bashrc
+
       - run:
           name: Verify Android SDK installation
           command: |
