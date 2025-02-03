@@ -3,54 +3,83 @@ name: Appium CI
 on: [push]
 
 jobs:
-  test:
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        api-level: [21, 33]
-        target: [google_apis]
-        arch: [x86_64]
+  Sauce-Labs-App-Automate:
+    runs-on: ubuntu-latest
+    name: Appium Test
     steps:
+      # Checkout the repository
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
-      - name: Cache Maven dependencies
-        uses: actions/cache@v3
+      # Set up Java
+      - name: Setup Java
+        uses: actions/setup-java@v3
         with:
-          path: ~/.m2
-          key: maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            maven-
+          java-version: '11'
+          distribution: 'temurin'
 
-      - name: AVD cache
-        uses: actions/cache@v3
-        id: avd-cache
+      # Set up Node.js
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
         with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-${{ matrix.api-level }}
+          node-version: '20'
 
-      - name: Create AVD and generate snapshot for caching
-        if: steps.avd-cache.outputs.cache-hit != 'true'
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: ${{ matrix.api-level }}
-          target: ${{ matrix.target }}
-          arch: ${{ matrix.arch }}
-          force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: false
-          script: echo "Generated AVD snapshot for caching."
+      # Install Appium and drivers
+      - name: Install Appium server and Appium android driver
+        run: |
+          npm install -g appium@next
+          appium -v
+          appium driver install uiautomator2
 
-      - name: Start AVD and Run Appium Tests
-        uses: reactivecircus/android-emulator-runner@v2
+      # Set up Android SDK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
         with:
-          api-level: ${{ matrix.api-level }}
-          target: ${{ matrix.target }}
-          arch: ${{ matrix.arch }}
-          force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: true
-          script: |
-            mvn clean test
+          components: |
+            platform-tools
+            platforms;android-29
+            system-images;android-29;google_apis;x86_64
+            emulator
+
+      # Verify Android SDK installation
+      - name: Verify Android SDK installation
+        run: sdkmanager --list
+
+      # Create Android Virtual Device (AVD)
+      - name: Create AVD
+        run: |
+          echo "no" | avdmanager create avd -n test -k "system-images;android-29;google_apis;x86_64" --force
+          $ANDROID_HOME/emulator/emulator -list-avds
+          # Modify AVD configuration to reduce CPU and RAM requirements
+          echo "hw.cpu.ncore=2" >> ~/.android/avd/test.avd/config.ini
+          echo "hw.ramSize=1024" >> ~/.android/avd/test.avd/config.ini
+
+      # Start Android Emulator
+      - name: Start Emulator
+        run: |
+          $ANDROID_HOME/emulator/emulator -avd test -no-window -no-audio -no-boot-anim -gpu off -accel off &
+          adb wait-for-device
+          adb shell input keyevent 82
+        timeout-minutes: 20
+
+      # Check Emulator Logs (for debugging)
+      - name: Check Emulator Logs
+        run: |
+          cat ~/.android/avd/test.avd/logs/emulator.log
+
+      # Start Appium Server
+      - name: Install and Run Appium Server
+        uses: moatazeldebsy/appium-server-gitHub-action@V1.0.4
+
+      # Run Tests
+      - name: Execute Android Test Suite
+        run: |
+          mvn clean test
+
+      # Archive Test Reports
+      - name: Archive Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: reports
