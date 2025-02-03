@@ -21,28 +21,20 @@ jobs:
         with:
           java-version: '11'
 
-      - name: Download Maven
+      - name: Install Maven
         run: |
           curl -O https://archive.apache.org/dist/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.tar.gz
-
-      - name: Fix permissions for Maven archive
-        run: |
           chmod +x apache-maven-3.8.4-bin.tar.gz
-
-      - name: Extract Maven
-        run: |
           tar -xvzf apache-maven-3.8.4-bin.tar.gz
-
-      - name: Set up Maven
-        run: |
           sudo mv apache-maven-3.8.4 /opt/maven
           echo "MAVEN_HOME=/opt/maven" >> $GITHUB_ENV
           echo "PATH=$MAVEN_HOME/bin:$PATH" >> $GITHUB_ENV
 
-      - name: Install dependencies
-        run: |
-          mvn clean install
+      - name: Verify Maven installation
+        run: mvn -v
 
-      - name: Run Appium tests with Maven
-        run: |
-          mvn test
+      - name: Install project dependencies
+        run: mvn install
+
+      - name: Run Appium tests
+        run: mvn test
