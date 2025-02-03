@@ -26,11 +26,11 @@ jobs:
       - run:
           name: Install Node.js and npm
           command: |
-            curl -sL https://deb.nodesource.com/setup_18.x | bash -
-            sudo apt-get update
+            curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
             sudo apt-get install -y nodejs npm
             node -v
             npm -v
+            sudo npm install -g npm@latest
 
       - run:
           name: Install Appium and Android SDK
