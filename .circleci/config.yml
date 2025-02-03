@@ -3,7 +3,7 @@ version: 2.1
 executors:
   android-executor:
     docker:
-      - image: cimg/android:2024.01
+      - image: cimg/android:2024.01-browsers  # Updated to include more tools
     environment:
       ANDROID_HOME: /home/circleci/android-sdk
       ANDROID_SDK_ROOT: /home/circleci/android-sdk
@@ -17,21 +17,17 @@ jobs:
       - run:
           name: Debug environment
           command: |
+            which sdkmanager
             echo $ANDROID_HOME
             echo $PATH
-            ls -la /home/circleci/android-sdk || true
       - run:
-          name: Setup Android SDK
+          name: Accept Licenses
           command: |
-            mkdir -p ${ANDROID_HOME}/cmdline-tools
-            curl -o cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-            unzip cmdline-tools.zip
-            mv cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest
+            echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
       - run:
           name: Install Android SDK components
           command: |
-            ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
-            ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager \
+            $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
               "platform-tools" \
               "platforms;android-33" \
               "build-tools;33.0.2" \
@@ -40,7 +36,7 @@ jobs:
       - run:
           name: Create AVD
           command: |
-            ${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager create avd \
+            $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager create avd \
               -n testAVD \
               -k "system-images;android-33;google_apis;x86_64" \
               --device "pixel" \
@@ -58,11 +54,16 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
+          name: Install Node.js and npm
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+      - run:
           name: Start AVD and Appium
           command: |
-            nohup emulator -avd testAVD -no-audio -no-window &
-            adb wait-for-device
-            adb shell input keyevent 82
+            nohup $ANDROID_HOME/emulator/emulator -avd testAVD -no-audio -no-window &
+            $ANDROID_HOME/platform-tools/adb wait-for-device
+            $ANDROID_HOME/platform-tools/adb shell input keyevent 82
             npm install -g appium
             appium --log-level error &
       - run:
