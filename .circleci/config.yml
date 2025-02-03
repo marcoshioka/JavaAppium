@@ -6,19 +6,23 @@ jobs:
       - image: circleci/python:3.8  # You can choose an image suitable for your setup
     steps:
       - checkout
+
       - run:
           name: Install dependencies
           command: |
-            sudo apt-get update
+            # Update and upgrade packages with non-interactive mode
+            sudo apt-get update -y
+            DEBIAN_FRONTEND=noninteractive sudo apt-get upgrade -y || true
+            # Remove potential lock files
+            sudo rm -f /var/lib/apt/lists/lock
+            sudo rm -f /var/cache/apt/archives/lock
+            sudo rm -f /var/lib/dpkg/lock*
+            sudo dpkg --configure -a
             sudo apt-get install -y software-properties-common
             echo "y" | sudo apt-add-repository ppa:openjdk-r/ppa  # Automatically confirm repository addition
-            sudo apt-get update
-            sudo apt-get install -y openjdk-11-jdk maven
-            sudo apt-get install -y android-sdk
-            sudo apt-get install -y dbus dbus-x11  # Install dbus and dbus-x11 to fix the connection issue
-            sudo apt-get install -y curl  # For downloading nodejs
-            sudo apt-get install -y libnode-dev  # Install missing dependency for node-gyp
-          
+            sudo apt-get update -y
+            sudo apt-get install -y openjdk-11-jdk maven android-sdk dbus dbus-x11 curl libnode-dev
+
       - run:
           name: Install Node.js and npm (with fixes)
           command: |
