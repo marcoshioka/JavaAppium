@@ -7,7 +7,7 @@ executors:
     working_directory: ~/repo
     environment:
       ANDROID_HOME: /opt/android-sdk
-      PATH: "/opt/apache-maven-3.8.4/bin:$PATH:/opt/android-sdk/cmdline-tools/bin:$PATH"
+      PATH: "/home/circleci/apache-maven-3.8.4/bin:$PATH:/opt/android-sdk/cmdline-tools/bin:$PATH"
 
 jobs:
   setup:
@@ -19,8 +19,8 @@ jobs:
           name: Install Maven
           command: |
             curl -O https://archive.apache.org/dist/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.tar.gz
-            tar -xzvf apache-maven-3.8.4-bin.tar.gz -C /opt
-            echo "export PATH=/opt/apache-maven-3.8.4/bin:$PATH" >> ~/.bashrc
+            tar -xzvf apache-maven-3.8.4-bin.tar.gz -C /home/circleci
+            echo "export PATH=/home/circleci/apache-maven-3.8.4/bin:$PATH" >> ~/.bashrc
             source ~/.bashrc
       - run:
           name: Install Appium and Android SDK
